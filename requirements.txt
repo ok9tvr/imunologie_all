@@ -1,2 +1,6 @@
 streamlit
 pandas
+random
+matplotlib
+seaborn
+grok
