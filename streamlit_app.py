@@ -1,11 +1,21 @@
 import streamlit as st
 import random
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from grok import Grok
 
-# Inicializace AI modelu (simulace Grok API)
+# Kontrola importu matplotlib a seaborn
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+except ModuleNotFoundError as e:
+    st.error(f"Chyba: Modul {e.name} není nainstalován. Nainstalujte jej příkazem: `pip install {e.name}`")
+    st.stop()
+
+# Simulace Grok API přímo v kódu
+class Grok:
+    def generate_response(self, otázka):
+        # Simulovaná odpověď pro demonstrační účely
+        return f"AI odpověď: {otázka} - Například, protilátky jsou proteiny produkované B-lymfocyty, které neutralizují patogeny."
+
 grok = Grok()
 
 # Hlavní nadpis aplikace
@@ -76,11 +86,13 @@ elif section == "AI Vysvětlení":
     otázka = st.text_input("Zadejte otázku (např. Co jsou protilátky?)")
     if st.button("Získat odpověď"):
         if otázka:
-            # Simulace odpovědi od Grok AI
             odpověď = grok.generate_response(otázka)
             st.write(f"**Odpověď AI**: {odpověď}")
         else:
             st.warning("Prosím, zadejte otázku.")
 
 # Instrukce pro spuštění
-st.sidebar.write("**Jak spustit aplikaci**: Ujistěte se, že máte nainstalované knihovny Streamlit, Pandas, Matplotlib, Seaborn a Grok API. Spusťte příkaz `streamlit run immunology_app.py`.")
+st.sidebar.write("**Jak spustit aplikaci**:")
+st.sidebar.write("1. Nainstalujte knihovny: `pip install streamlit pandas matplotlib seaborn`")
+st.sidebar.write("2. Spusťte příkaz: `streamlit run streamlit_app.py`")
+st.sidebar.write("3. Pokud nasazujete na Streamlit Cloud, ujistěte se, že máte správný soubor `requirements.txt`.")
