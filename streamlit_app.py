@@ -1,151 +1,86 @@
 import streamlit as st
+import random
 import pandas as pd
-import math
-from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+from grok import Grok
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+# Inicializace AI modelu (simulace Grok API)
+grok = Grok()
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# Hlavní nadpis aplikace
+st.title("Interaktivní výuka imunologie")
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+# Sidebar pro navigaci
+st.sidebar.header("Navigace")
+section = st.sidebar.selectbox("Vyberte sekci", ["Úvod do imunologie", "Kvízy", "Interaktivní diagramy", "AI Vysvětlení"])
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+# Sekce 1: Úvod do imunologie
+if section == "Úvod do imunologie":
+    st.header("Úvod do imunologie")
+    st.write("Imunologie je věda, která studuje imunitní systém, jehož hlavní funkcí je chránit tělo před infekcemi a cizími látkami.")
+    st.subheader("Základní pojmy")
+    st.write("- **Innata imunita**: Vrozená imunita, první linie obrany.")
+    st.write("- **Adaptivní imunita**: Specifická imunita, která se učí a přizpůsobuje.")
+    st.write("- **Imunitní buňky**: Např. T-lymfocyty, B-lymfocyty, makrofágy.")
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
-
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
+# Sekce 2: Kvízy
+elif section == "Kvízy":
+    st.header("Test svých znalostí")
+    quiz_questions = [
+        {"otázka": "Co je hlavní funkcí T-lymfocytů?", 
+         "možnosti": ["Produkce protilátek", "Zabíjení infikovaných buněk", "Fagocytóza"], 
+         "správná": "Zabíjení infikovaných buněk"},
+        {"otázka": "Která buňka produkuje protilátky?", 
+         "možnosti": ["Makrofág", "B-lymfocyt", "Dendritická buňka"], 
+         "správná": "B-lymfocyt"},
+    ]
+    
+    st.subheader("Kviz: Základy imunologie")
+    otázka = random.choice(quiz_questions)
+    st.write(otázka["otázka"])
+    odpověď = st.radio("Vyberte správnou odpověď:", otázka["možnosti"])
+    
+    if st.button("Odeslat odpověď"):
+        if odpověď == otázka["správná"]:
+            st.success("Správně! 🎉")
         else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
+            st.error(f"Špatně. Správná odpověď je: {otázka['správná']}.")
 
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+# Sekce 3: Interaktivní diagramy
+elif section == "Interaktivní diagramy":
+    st.header("Interaktivní diagramy imunitního systému")
+    st.write("Vyberte typ imunitní buňky pro zobrazení její distribuce.")
+    buňky = ["T-lymfocyty", "B-lymfocyty", "Makrofágy", "Neutrofily"]
+    vybraná_buňka = st.selectbox("Vyberte buňku", buňky)
+    
+    # Simulace dat o distribuci buněk
+    data = {
+        "Buňka": ["T-lymfocyty", "B-lymfocyty", "Makrofágy", "Neutrofily"],
+        "Procento": [30, 20, 25, 25]
+    }
+    df = pd.DataFrame(data)
+    
+    # Vytvoření grafu
+    plt.figure(figsize=(6, 4))
+    sns.barplot(x="Buňka", y="Procento", data=df)
+    plt.title(f"Distribuce imunitních buněk")
+    plt.xticks(rotation=45)
+    st.pyplot(plt)
+    
+    st.write(f"**{vybraná_buňka}**: Zde by bylo podrobné vysvětlení role této buňky v imunitním systému.")
+
+# Sekce 4: AI Vysvětlení
+elif section == "AI Vysvětlení":
+    st.header("Zeptejte se AI na imunologii")
+    otázka = st.text_input("Zadejte otázku (např. Co jsou protilátky?)")
+    if st.button("Získat odpověď"):
+        if otázka:
+            # Simulace odpovědi od Grok AI
+            odpověď = grok.generate_response(otázka)
+            st.write(f"**Odpověď AI**: {odpověď}")
+        else:
+            st.warning("Prosím, zadejte otázku.")
+
+# Instrukce pro spuštění
+st.sidebar.write("**Jak spustit aplikaci**: Ujistěte se, že máte nainstalované knihovny Streamlit, Pandas, Matplotlib, Seaborn a Grok API. Spusťte příkaz `streamlit run immunology_app.py`.")
