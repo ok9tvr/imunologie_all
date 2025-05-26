@@ -13,6 +13,108 @@ except ModuleNotFoundError as e:
     st.error(f"Chyba: Modul {e.name} není nainstalován. Nainstalujte jej příkazem: `pip install {e.name}`")
     st.stop()
 
+# Vlastní CSS pro moderní design
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #F5F7FA;
+    color: #333333;
+}
+
+h1 {
+    color: #1E88E5;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: #43A047;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+p, li {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333333;
+}
+
+.stButton>button {
+    background: linear-gradient(to right, #1E88E5, #43A047);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.stButton>button:hover {
+    background: linear-gradient(to right, #1565C0, #2E7D32);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.stSidebar {
+    background-color: #E3F2FD;
+    padding: 20px;
+}
+
+.stSidebar .stSelectbox, .stSidebar .stMarkdown {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stSidebar h1, .stSidebar h2 {
+    color: #1E88E5;
+}
+
+.main .block-container {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.stColumn:nth-child(2) .block-container {
+    background-color: #E8F5E9;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stSlider>div>div>div {
+    background-color: #1E88E5;
+    border-radius: 8px;
+}
+
+.stRadio>label, .stSelectbox>label, .stMultiselect>label {
+    color: #333333;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.stDataFrame {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stAlert {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Simulace Grok API
 class Grok:
     def generate_response(self, otázka):
@@ -247,10 +349,9 @@ def simuluj_imunoprecipitaci(ag_konc, ab_konc):
         precip *= (ag_konc * ab_konc) ** 0.5
         precipitace.append(precip)
     
-    # Výpočet aktuální hodnoty pro zadaný poměr
     aktualni_pomer = ag_konc / ab_konc
     if aktualni_pomer < 0.1:
-        aktualni_pomer = 0.1  # Omezení na rozsah křivky
+        aktualni_pomer = 0.1
     elif aktualni_pomer > 10:
         aktualni_pomer = 10
     aktualni_precip = 1 / (1 + ((aktualni_pomer - 1) ** 2)) * (ag_konc * ab_konc) ** 0.5
@@ -314,7 +415,7 @@ with main_col:
         df = pd.DataFrame(data)
         
         plt.figure(figsize=(6, 4))
-        sns.barplot(x="Buňka", y="Procento", data=df)
+        sns.barplot(x="Buňka", y="Procento", data=df, palette=["#1E88E5", "#43A047", "#A9CCE3", "#F5B7B1"])
         plt.title(f"Distribuce imunitních buněk")
         plt.xticks(rotation=45)
         st.pyplot(plt)
@@ -419,7 +520,7 @@ with main_col:
             T_df = pd.DataFrame.from_dict(T_subpopulace, orient="index", columns=["Procento"])
             T_df["Procento"] *= 100
             plt.figure(figsize=(6, 4))
-            sns.barplot(x=T_df.index, y="Procento", data=T_df)
+            sns.barplot(x=T_df.index, y="Procento", data=T_df, palette=["#1E88E5", "#43A047", "#A9CCE3", "#F5B7B1"])
             plt.title("Distribuce T-buněčných subpopulací")
             plt.xticks(rotation=45)
             plt.ylabel("Procento (%)")
@@ -429,7 +530,7 @@ with main_col:
             ig_df = pd.DataFrame.from_dict(imunoglobuliny, orient="index", columns=["Procento"])
             ig_df["Procento"] *= 100
             plt.figure(figsize=(6, 4))
-            sns.barplot(x=ig_df.index, y="Procento", data=ig_df)
+            sns.barplot(x=ig_df.index, y="Procento", data=ig_df, palette=["#1E88E5", "#43A047", "#A9CCE3", "#F5B7B1"])
             plt.title("Distribuce imunoglobulinů")
             plt.xticks(rotation=45)
             plt.ylabel("Procento (%)")
@@ -469,11 +570,11 @@ with main_col:
             pomer, precipitace, aktualni_pomer, aktualni_precip = simuluj_imunoprecipitaci(ag_konc, ab_konc)
 
             plt.figure(figsize=(8, 5))
-            plt.plot(pomer, precipitace, label="Imunoprecipitační křivka", color="blue")
-            plt.scatter([aktualni_pomer], [aktualni_precip], color="blue", s=100, label="Aktuální hodnota", zorder=5)
-            plt.axvline(x=1, color="red", linestyle="--", label="Zóna ekvivalence")
-            plt.fill_between(pomer, precipitace, where=(pomer < 1), color="orange", alpha=0.2, label="Zóna nadbytku protilátek")
-            plt.fill_between(pomer, precipitace, where=(pomer > 1), color="green", alpha=0.2, label="Zóna nadbytku antigenů")
+            plt.plot(pomer, precipitace, label="Imunoprecipitační křivka", color="#1E88E5")
+            plt.scatter([aktualni_pomer], [aktualni_precip], color="#1E88E5", s=100, label="Aktuální hodnota", zorder=5)
+            plt.axvline(x=1, color="#F5B7B1", linestyle="--", label="Zóna ekvivalence")
+            plt.fill_between(pomer, precipitace, where=(pomer < 1), color="#A9CCE3", alpha=0.2, label="Zóna nadbytku protilátek")
+            plt.fill_between(pomer, precipitace, where=(pomer > 1), color="#E8F5E9", alpha=0.2, label="Zóna nadbytku antigenů")
             plt.xlabel("Poměr antigen/protilátka")
             plt.ylabel("Míra precipitace (relativní jednotky)")
             plt.title("Simulace imunoprecipitační křivky")
