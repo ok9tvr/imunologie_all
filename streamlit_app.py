@@ -239,20 +239,23 @@ def simuluj_imunitni_odpoved(patogen, cytokiny):
     return T_subpopulace, imunoglobuliny, base_response["popis"]
 
 def simuluj_imunoprecipitaci(ag_konc, ab_konc):
-    # Poměr antigen/protilátka
-    pomer = np.linspace(0.1, 10, 100)  # Poměr od nadbytku protilátek k nadbytku antigenů
+    pomer = np.linspace(0.1, 10, 100)
     precipitace = []
     
     for p in pomer:
-        # Simulace precipitace: zóna nadbytku protilátek, ekvivalence a nadbytku antigenů
-        # Modelujeme jako Gaussovu křivku s maximem v zóně ekvivalence (přibližně pomer=1)
-        # Precipitace je maximální v zóně ekvivalence a klesá na obě strany
-        precip = 1 / (1 + ((p - 1) ** 2))  # Jednoduchý model precipitace
-        # Upravíme podle koncentrací antigenů a protilátek
-        precip *= (ag_konc * ab_konc) ** 0.5  # Závislost na koncentracích
+        precip = 1 / (1 + ((p - 1) ** 2))
+        precip *= (ag_konc * ab_konc) ** 0.5
         precipitace.append(precip)
     
-    return pomer, precipitace
+    # Výpočet aktuální hodnoty pro zadaný poměr
+    aktualni_pomer = ag_konc / ab_konc
+    if aktualni_pomer < 0.1:
+        aktualni_pomer = 0.1  # Omezení na rozsah křivky
+    elif aktualni_pomer > 10:
+        aktualni_pomer = 10
+    aktualni_precip = 1 / (1 + ((aktualni_pomer - 1) ** 2)) * (ag_konc * ab_konc) ** 0.5
+    
+    return pomer, precipitace, aktualni_pomer, aktualni_precip
 
 # Záhlaví
 st.title("Interaktivní výuka imunologie a flow cytometrie")
@@ -261,8 +264,8 @@ st.title("Interaktivní výuka imunologie a flow cytometrie")
 st.sidebar.header("Navigace")
 section = st.sidebar.selectbox("Vyberte sekci", ["Úvod do imunologie", "Kvízy", "Interaktivní diagramy", "AI Vysvětlení", "Flow Cytometrie", "Simulace imunitní odpovědi", "Nefelometrie a turbidimetrie"])
 
-# Hlavní obsah a AI chat v pravém sloupci
-main_col, ai_chat_col = st.columns([2, 1])
+# Hlavní obsah a AI chat v pravém sloupci s poměrem 2:3
+main_col, ai_chat_col = st.columns([2, 3])
 
 with main_col:
     # Sekce 1: Úvod do imunologie
@@ -459,16 +462,15 @@ with main_col:
         - **Zóna nadbytku antigenů**: Převažují antigeny, tvorba komplexů klesá.
         """)
 
-        # Nastavení koncentrací
         ab_konc = st.slider("Koncentrace protilátek (relativní jednotky)", 0.1, 10.0, 1.0)
         ag_konc = st.slider("Koncentrace antigenů (relativní jednotky)", 0.1, 10.0, 1.0)
 
         if st.button("Spustit simulaci imunoprecipitace"):
-            pomer, precipitace = simuluj_imunoprecipitaci(ag_konc, ab_konc)
+            pomer, precipitace, aktualni_pomer, aktualni_precip = simuluj_imunoprecipitaci(ag_konc, ab_konc)
 
-            # Vizualizace křivky
             plt.figure(figsize=(8, 5))
             plt.plot(pomer, precipitace, label="Imunoprecipitační křivka", color="blue")
+            plt.scatter([aktualni_pomer], [aktualni_precip], color="blue", s=100, label="Aktuální hodnota", zorder=5)
             plt.axvline(x=1, color="red", linestyle="--", label="Zóna ekvivalence")
             plt.fill_between(pomer, precipitace, where=(pomer < 1), color="orange", alpha=0.2, label="Zóna nadbytku protilátek")
             plt.fill_between(pomer, precipitace, where=(pomer > 1), color="green", alpha=0.2, label="Zóna nadbytku antigenů")
@@ -479,7 +481,6 @@ with main_col:
             plt.grid(True, alpha=0.3)
             st.pyplot(plt)
 
-            # Vysvětlení výsledků
             pomer_ekvivalence = 1.0
             aktualni_pomer = ag_konc / ab_konc
             if aktualni_pomer < 0.5:
