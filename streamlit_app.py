@@ -216,7 +216,6 @@ def simuluj_imunitni_odpoved(patogen, cytokiny):
     T_subpopulace = base_response["T_subpopulace"].copy()
     imunoglobuliny = base_response["imunoglobuliny"].copy()
     
-    # Modifikace podle uživatelských cytokinů
     for cytokin, hodnota in cytokiny.items():
         if hodnota > 0.5:
             if cytokin == "IFN-γ":
@@ -232,7 +231,6 @@ def simuluj_imunitni_odpoved(patogen, cytokiny):
                 T_subpopulace["Treg"] += 0.2
                 imunoglobuliny["IgA"] += 0.1
     
-    # Normalizace T-subpopulací a imunoglobulinů
     total_T = sum(T_subpopulace.values())
     total_ig = sum(imunoglobuliny.values())
     T_subpopulace = {k: v/total_T for k, v in T_subpopulace.items()}
@@ -240,12 +238,28 @@ def simuluj_imunitni_odpoved(patogen, cytokiny):
     
     return T_subpopulace, imunoglobuliny, base_response["popis"]
 
+def simuluj_imunoprecipitaci(ag_konc, ab_konc):
+    # Poměr antigen/protilátka
+    pomer = np.linspace(0.1, 10, 100)  # Poměr od nadbytku protilátek k nadbytku antigenů
+    precipitace = []
+    
+    for p in pomer:
+        # Simulace precipitace: zóna nadbytku protilátek, ekvivalence a nadbytku antigenů
+        # Modelujeme jako Gaussovu křivku s maximem v zóně ekvivalence (přibližně pomer=1)
+        # Precipitace je maximální v zóně ekvivalence a klesá na obě strany
+        precip = 1 / (1 + ((p - 1) ** 2))  # Jednoduchý model precipitace
+        # Upravíme podle koncentrací antigenů a protilátek
+        precip *= (ag_konc * ab_konc) ** 0.5  # Závislost na koncentracích
+        precipitace.append(precip)
+    
+    return pomer, precipitace
+
 # Záhlaví
 st.title("Interaktivní výuka imunologie a flow cytometrie")
 
 # Menu v levém sloupci
 st.sidebar.header("Navigace")
-section = st.sidebar.selectbox("Vyberte sekci", ["Úvod do imunologie", "Kvízy", "Interaktivní diagramy", "AI Vysvětlení", "Flow Cytometrie", "Simulace imunitní odpovědi"])
+section = st.sidebar.selectbox("Vyberte sekci", ["Úvod do imunologie", "Kvízy", "Interaktivní diagramy", "AI Vysvětlení", "Flow Cytometrie", "Simulace imunitní odpovědi", "Nefelometrie a turbidimetrie"])
 
 # Hlavní obsah a AI chat v pravém sloupci
 main_col, ai_chat_col = st.columns([2, 1])
@@ -398,7 +412,6 @@ with main_col:
             
             st.write(f"**Popis simulace:** {popis}")
             
-            # Vizualizace T-subpopulací
             st.subheader("Rozložení T-buněčných subpopulací")
             T_df = pd.DataFrame.from_dict(T_subpopulace, orient="index", columns=["Procento"])
             T_df["Procento"] *= 100
@@ -409,7 +422,6 @@ with main_col:
             plt.ylabel("Procento (%)")
             st.pyplot(plt)
             
-            # Vizualizace imunoglobulinů
             st.subheader("Produkce imunoglobulinů")
             ig_df = pd.DataFrame.from_dict(imunoglobuliny, orient="index", columns=["Procento"])
             ig_df["Procento"] *= 100
@@ -420,7 +432,6 @@ with main_col:
             plt.ylabel("Procento (%)")
             st.pyplot(plt)
             
-            # Tabulka s výsledky
             st.subheader("Podrobné výsledky")
             col1, col2 = st.columns(2)
             with col1:
@@ -429,6 +440,54 @@ with main_col:
             with col2:
                 st.write("**Imunoglobuliny (%):**")
                 st.dataframe(ig_df.style.format("{:.1f}"))
+
+    # Sekce 7: Nefelometrie a turbidimetrie
+    elif section == "Nefelometrie a turbidimetrie":
+        st.header("Nefelometrie a turbidimetrie")
+        st.write("""
+        **Nefelometrie** a **turbidimetrie** jsou optické metody používané k měření koncentrace částic v roztoku, často v klinické diagnostice k analýze imunoglobulinů, proteinů nebo imunokomplexů.
+        - **Nefelometrie** měří rozptyl světla pod určitým úhlem (obvykle 90°) v důsledku přítomnosti imunokomplexů.
+        - **Turbidimetrie** měří pokles intenzity světla procházejícího roztokem kvůli rozptylu na částicích.
+        Tyto metody jsou založeny na **imunoprecipitaci**, kdy reakce mezi antigenem a protilátkou vytváří nerozpustné komplexy, které rozptylují světlo.
+        """)
+
+        st.subheader("Simulace imunoprecipitační křivky")
+        st.write("""
+        Imunoprecipitační křivka ukazuje, jak se mění tvorba imunokomplexů v závislosti na poměru antigen/protilátka:
+        - **Zóna nadbytku protilátek**: Převažují protilátky, tvorba komplexů je nízká.
+        - **Zóna ekvivalence**: Poměr antigen/protilátka je optimální, tvorba komplexů je maximální.
+        - **Zóna nadbytku antigenů**: Převažují antigeny, tvorba komplexů klesá.
+        """)
+
+        # Nastavení koncentrací
+        ab_konc = st.slider("Koncentrace protilátek (relativní jednotky)", 0.1, 10.0, 1.0)
+        ag_konc = st.slider("Koncentrace antigenů (relativní jednotky)", 0.1, 10.0, 1.0)
+
+        if st.button("Spustit simulaci imunoprecipitace"):
+            pomer, precipitace = simuluj_imunoprecipitaci(ag_konc, ab_konc)
+
+            # Vizualizace křivky
+            plt.figure(figsize=(8, 5))
+            plt.plot(pomer, precipitace, label="Imunoprecipitační křivka", color="blue")
+            plt.axvline(x=1, color="red", linestyle="--", label="Zóna ekvivalence")
+            plt.fill_between(pomer, precipitace, where=(pomer < 1), color="orange", alpha=0.2, label="Zóna nadbytku protilátek")
+            plt.fill_between(pomer, precipitace, where=(pomer > 1), color="green", alpha=0.2, label="Zóna nadbytku antigenů")
+            plt.xlabel("Poměr antigen/protilátka")
+            plt.ylabel("Míra precipitace (relativní jednotky)")
+            plt.title("Simulace imunoprecipitační křivky")
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            st.pyplot(plt)
+
+            # Vysvětlení výsledků
+            pomer_ekvivalence = 1.0
+            aktualni_pomer = ag_konc / ab_konc
+            if aktualni_pomer < 0.5:
+                st.write("**Výsledek:** Nacházíte se v zóně nadbytku protilátek. Imunokomplexy jsou malé a precipitace je nízká.")
+            elif 0.5 <= aktualni_pomer <= 2.0:
+                st.write("**Výsledek:** Nacházíte se blízko zóny ekvivalence. Tvorba imunokomplexů je maximální, což je ideální pro měření nefelometrií/turbidimetrií.")
+            else:
+                st.write("**Výsledek:** Nacházíte se v zóně nadbytku antigenů. Imunokomplexy jsou malé a precipitace klesá.")
 
 with ai_chat_col:
     st.header("AI Chat")
